@@ -2,23 +2,24 @@ package internalhttp
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 	"net/http"
 	"os"
+	"path/filepath"
+	"strings"
 	"time"
 
-	"github.com/DogFox/otus_go_home_work/hw12_13_14_15_calendar/internal/app"
-	"github.com/DogFox/otus_go_home_work/hw12_13_14_15_calendar/internal/logger"
-	domain "github.com/DogFox/otus_go_home_work/hw12_13_14_15_calendar/internal/model"
+	"github.com/DogFox/CutIt/internal/cache"
+	"github.com/DogFox/CutIt/internal/downloader"
+	"github.com/DogFox/CutIt/internal/logger"
+	"github.com/DogFox/CutIt/internal/resizer"
 )
 
 type Server struct {
-	logg    *logger.Logger
-	app     Application
 	Addr    string
 	Handler http.Handler
-	storage app.Storage
+	logg    *logger.Logger
+	cache   *cache.Cache
 }
 
 type Logger interface {
@@ -27,20 +28,13 @@ type Logger interface {
 
 type Application interface{}
 
-func NewServer(logger *logger.Logger, app Application, storage app.Storage, dsn string) *Server {
+func NewServer(logger *logger.Logger, app Application, dsn string) *Server {
 	mux := http.NewServeMux()
 	server := &Server{
-		app:     app,
-		Addr:    dsn,
-		logg:    logger,
-		storage: storage,
+		logg: logger,
 	}
-	mux.HandleFunc("/events", server.GetEventList)
-	mux.HandleFunc("/events/create", server.CreateEvent)
-	mux.HandleFunc("/events/update", server.UpdateEvent)
-	mux.HandleFunc("/events/delete", server.DeleteEvent)
+	mux.HandleFunc("/fill", server.ResizeImage)
 
-	server.Handler = loggingMiddleware(mux, logger)
 	return server
 }
 
@@ -68,86 +62,35 @@ func (s *Server) Stop(_ context.Context) error {
 	return nil
 }
 
-func (s *Server) GetEventList(w http.ResponseWriter, r *http.Request) {
-	// dateQuery := r.URL.Query().Get("date")
-	// if dateQuery == "" {
-	// 	http.Error(w, "Missing date parameter", http.StatusBadRequest)
-	// 	return
-	// }
-
-	// date, err := time.Parse("2006-01-02", dateQuery)
-	// if err != nil {
-	// 	http.Error(w, "Invalid date format", http.StatusBadRequest)
-	// 	return
-	// }
-
-	events, err := s.storage.EventList(r.Context())
-	if err != nil {
-		http.Error(w, "Error retrieving events", http.StatusInternalServerError)
+func (s *Server) ResizeImage(w http.ResponseWriter, r *http.Request) {
+	parts := strings.Split(r.URL.Path, "/")
+	if len(parts) < 4 {
+		http.Error(w, "Invalid URL format", http.StatusBadRequest)
 		return
 	}
 
-	results := make([]domain.Event, 0)
-	results = append(results, events...)
-	// for _, event := range events {
-	// if event.Date.Format("2006-01-02") == date.Format("2006-01-02") {
-	// results = append(results, event)
-	// }
-	// }
+	width, height := parts[2], parts[3]
+	imgURL := strings.Join(parts[4:], "/")
 
-	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(results)
-}
-
-func (s *Server) CreateEvent(w http.ResponseWriter, r *http.Request) {
-	var req domain.Event
-	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		http.Error(w, "Invalid request body", http.StatusBadRequest)
+	cacheKey := width + "x" + height + "_" + imgURL
+	if path, found := s.cache.Get(cacheKey); found {
+		http.ServeFile(w, r, path)
 		return
 	}
 
-	err := s.storage.CreateEvent(r.Context(), req)
-	if err != nil {
-		http.Error(w, "Failed to create event", http.StatusInternalServerError)
+	originalPath := filepath.Join("cache", "original.jpg")
+	resizedPath := filepath.Join("cache", "resized.jpg")
+
+	if err := downloader.Download(imgURL, originalPath); err != nil {
+		http.Error(w, "Failed to download image", http.StatusBadGateway)
 		return
 	}
 
-	w.WriteHeader(http.StatusCreated)
-	json.NewEncoder(w).Encode(req)
-}
-
-func (s *Server) UpdateEvent(w http.ResponseWriter, r *http.Request) {
-	var req domain.Event
-	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		http.Error(w, "Invalid request body", http.StatusBadRequest)
+	if err := resizer.Resize(originalPath, resizedPath, width, height); err != nil {
+		http.Error(w, "Failed to resize image", http.StatusInternalServerError)
 		return
 	}
 
-	err := s.storage.UpdateEvent(r.Context(), req)
-	if err != nil {
-		http.Error(w, "Failed to update event", http.StatusInternalServerError)
-		return
-	}
-
-	w.WriteHeader(http.StatusOK)
-	json.NewEncoder(w).Encode(req)
-}
-
-func (s *Server) DeleteEvent(w http.ResponseWriter, r *http.Request) {
-	var req struct {
-		ID int64 `json:"id"`
-	}
-	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		http.Error(w, "Invalid request body", http.StatusBadRequest)
-		return
-	}
-
-	err := s.storage.DeleteEvent(r.Context(), req.ID)
-	if err != nil {
-		http.Error(w, "Failed to delete event", http.StatusInternalServerError)
-		return
-	}
-
-	w.WriteHeader(http.StatusOK)
-	w.Write([]byte(`{"message": "Event deleted"}`))
+	s.cache.Put(cacheKey, resizedPath)
+	http.ServeFile(w, r, resizedPath)
 }
