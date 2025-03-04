@@ -5,14 +5,12 @@ import (
 	"fmt"
 	"net/http"
 	"os"
-	"path/filepath"
 	"strings"
 	"time"
 
+	"github.com/DogFox/CutIt/internal/app"
 	"github.com/DogFox/CutIt/internal/cache"
-	"github.com/DogFox/CutIt/internal/downloader"
 	"github.com/DogFox/CutIt/internal/logger"
-	"github.com/DogFox/CutIt/internal/resizer"
 )
 
 type Server struct {
@@ -20,18 +18,18 @@ type Server struct {
 	Handler http.Handler
 	logg    *logger.Logger
 	cache   *cache.Cache
+	app     *app.App
 }
 
 type Logger interface {
 	*logger.Logger
 }
 
-type Application interface{}
-
-func NewServer(logger *logger.Logger, app Application, dsn string) *Server {
+func NewServer(logger *logger.Logger, app *app.App, dsn string) *Server {
 	mux := http.NewServeMux()
 	server := &Server{
 		logg: logger,
+		app:  app,
 	}
 	mux.HandleFunc("/fill", server.ResizeImage)
 
@@ -69,28 +67,15 @@ func (s *Server) ResizeImage(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	width, height := parts[2], parts[3]
+	width := parts[2]
+	height := parts[3]
 	imgURL := strings.Join(parts[4:], "/")
 
-	cacheKey := width + "x" + height + "_" + imgURL
-	if path, found := s.cache.Get(cacheKey); found {
-		http.ServeFile(w, r, path)
+	resizedPath, err := s.app.Resize(imgURL, width, height)
+	if err != nil {
+		http.Error(w, "Error processing image", http.StatusInternalServerError)
 		return
 	}
 
-	originalPath := filepath.Join("cache", "original.jpg")
-	resizedPath := filepath.Join("cache", "resized.jpg")
-
-	if err := downloader.Download(imgURL, originalPath); err != nil {
-		http.Error(w, "Failed to download image", http.StatusBadGateway)
-		return
-	}
-
-	if err := resizer.Resize(originalPath, resizedPath, width, height); err != nil {
-		http.Error(w, "Failed to resize image", http.StatusInternalServerError)
-		return
-	}
-
-	s.cache.Put(cacheKey, resizedPath)
 	http.ServeFile(w, r, resizedPath)
 }

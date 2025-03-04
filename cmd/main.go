@@ -10,6 +10,7 @@ import (
 
 	config "github.com/DogFox/CutIt/configs"
 	app "github.com/DogFox/CutIt/internal/app"
+	"github.com/DogFox/CutIt/internal/cache"
 	logger "github.com/DogFox/CutIt/internal/logger"
 	http "github.com/DogFox/CutIt/internal/server"
 )
@@ -43,7 +44,8 @@ func main() {
 		syscall.SIGINT, syscall.SIGTERM, syscall.SIGHUP)
 	defer cancel()
 
-	imageCutter := app.New(logg)
+	cache := cache.NewCache(config.Cache.Size)
+	imageCutter := app.New(logg, cache)
 
 	httpServer := http.NewServer(logg, imageCutter, config.Server.DSN())
 
