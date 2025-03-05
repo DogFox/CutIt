@@ -18,7 +18,7 @@ import (
 var configFile string
 
 func init() {
-	flag.StringVar(&configFile, "config", "../../configs/config.yaml", "Path to configuration file")
+	flag.StringVar(&configFile, "config", "../configs/config.yaml", "Path to configuration file")
 }
 
 // func logEvery10Seconds() {
@@ -28,7 +28,7 @@ func init() {
 // 	}
 // }
 
-// go run ./cmd/ -config ./configs/config.yaml.
+// go run ./cmd/ -config ./configs/config.yaml
 func main() {
 	flag.Parse()
 

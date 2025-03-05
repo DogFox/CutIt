@@ -30,9 +30,11 @@ func NewServer(logger *logger.Logger, app *app.App, dsn string) *Server {
 	server := &Server{
 		logg: logger,
 		app:  app,
+		Addr: dsn,
 	}
-	mux.HandleFunc("/fill", server.ResizeImage)
+	mux.HandleFunc("/fill/", server.ResizeImage)
 
+	server.Handler = loggingMiddleware(mux, logger)
 	return server
 }
 
