@@ -6,3 +6,6 @@ cache:
 logger:
   level: "info"
   file: "app.log"
+tests:
+  url: "http://0.0.0.0:8050/fill/300/200/"
+  nginx: "http://0.0.0.0:8081/images/"nginx

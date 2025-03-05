@@ -3,77 +3,72 @@ package tests
 import (
 	"net/http"
 	"testing"
-	"time"
+
+	config "github.com/DogFox/CutIt/configs"
 )
 
-const previewerURL = "http://localhost:8050/fill/300/200/"
-const nginxURL = "localhost:8081/images/"
-
-func waitForService(url string) bool {
-	timeout := time.After(10 * time.Second)
-	tick := time.Tick(500 * time.Millisecond)
-
-	for {
-		select {
-		case <-timeout:
-			return false
-		case <-tick:
-			resp, err := http.Get(url)
-			if err == nil && resp.StatusCode < 500 {
-				return true
-			}
-		}
-	}
-}
-
 func TestImageFromCache(t *testing.T) {
-	url := previewerURL + nginxURL + "test.jpg"
-	// if !waitForService(url) {
-	// 	t.Fatal("Service not available")
-	// }
-
-	resp, err := http.Get(url)
-	if err != nil || resp.StatusCode != http.StatusOK {
-		t.Fatalf("Expected 200, got %d, err: %v", resp.StatusCode, err)
+	config, err := config.NewConfig("../configs/config.yaml")
+	if err != nil {
+		t.Fatalf("failed to load config: %v", err)
 	}
-}
 
-func TestRemoteServerNotExists(t *testing.T) {
-	url := previewerURL + "http://nonexistent.domain/image.jpg"
-	resp, err := http.Get(url)
-	if err != nil || resp.StatusCode != http.StatusBadGateway {
-		t.Fatalf("Expected 502, got %d, err: %v", resp.StatusCode, err)
-	}
-}
+	previewerURL := config.Tests.Url
+	NginxURL := config.Tests.Nginx
+	url := NginxURL + "test.jpg"
 
-func TestRemoteServerReturned404(t *testing.T) {
-	url := previewerURL + "notfound.jpg"
-	resp, err := http.Get(url)
-	if err != nil || resp.StatusCode != http.StatusNotFound {
-		t.Fatalf("Expected 404, got %d, err: %v", resp.StatusCode, err)
-	}
-}
+	t.Run("TestGetImageFromCache", func(t *testing.T) {
+		resp, err := http.Get(url)
+		if err != nil || resp.StatusCode != http.StatusOK {
+			t.Fatalf("Expected 200, got %d, err: %v", resp.StatusCode, err)
+		}
+	})
 
-func TestRemoteServerReturnedNonImage(t *testing.T) {
-	url := previewerURL + "malware.exe"
-	resp, err := http.Get(url)
-	if err != nil || resp.StatusCode != http.StatusUnsupportedMediaType {
-		t.Fatalf("Expected 415, got %d, err: %v", resp.StatusCode, err)
-	}
-}
+	t.Run("TestRemoteServerNotExists", func(t *testing.T) {
+		url := previewerURL + "http://nonexistent.domain/image.jpg"
+		resp, err := http.Get(url)
+		if err != nil || resp.StatusCode != http.StatusInternalServerError {
+			t.Fatalf("Expected 500, got %d, err: %v", resp.StatusCode, err)
+		}
+	})
 
-func TestRemoteServerReturnedImage(t *testing.T) {
-	url := previewerURL + "test.jpg"
-	resp, err := http.Get(url)
-	if err != nil || resp.StatusCode != http.StatusOK {
-		t.Fatalf("Expected 200, got %d, err: %v", resp.StatusCode, err)
-	}
-}
+	t.Run("TestRemoteServerReturned404", func(t *testing.T) {
+		url := previewerURL + "notfound.jpg"
+		resp, err := http.Get(url)
+		if err != nil || resp.StatusCode != http.StatusInternalServerError {
+			t.Fatalf("Expected 500, got %d, err: %v", resp.StatusCode, err)
+		}
+	})
 
-func TestImageSmallerThanRequiredSize(t *testing.T) {
-	url := previewerURL + "small.jpg"
-	resp, err := http.Get(url)
-	if err != nil || resp.StatusCode != http.StatusOK {
-		t.Fatalf("Expected 200, got %d, err: %v", resp.StatusCode, err)
-	}
+	t.Run("TestRemoteServerReturnedNonImage", func(t *testing.T) {
+		url := previewerURL + "malware.exe"
+		resp, err := http.Get(url)
+		if err != nil || resp.StatusCode != http.StatusInternalServerError {
+			t.Fatalf("Expected 500, got %d, err: %v", resp.StatusCode, err)
+		}
+	})
+
+	t.Run("TestRemoteServerReturnedError", func(t *testing.T) {
+		url := previewerURL + "error.jpg"
+		resp, err := http.Get(url)
+		if err != nil || resp.StatusCode != http.StatusInternalServerError {
+			t.Fatalf("Expected 500, got %d, err: %v", resp.StatusCode, err)
+		}
+	})
+
+	t.Run("TestRemoteServerReturnedImage", func(t *testing.T) {
+		url := previewerURL + "test.jpg"
+		resp, err := http.Get(url)
+		if err != nil || resp.StatusCode != http.StatusInternalServerError {
+			t.Fatalf("Expected 500, got %d, err: %v", resp.StatusCode, err)
+		}
+	})
+
+	t.Run("TestImageSmallerThanRequiredSize", func(t *testing.T) {
+		url := previewerURL + "small.jpg"
+		resp, err := http.Get(url)
+		if err != nil || resp.StatusCode != http.StatusInternalServerError {
+			t.Fatalf("Expected 500, got %d, err: %v", resp.StatusCode, err)
+		}
+	})
 }

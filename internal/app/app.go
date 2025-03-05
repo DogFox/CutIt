@@ -2,10 +2,9 @@ package app
 
 import (
 	"fmt"
-	"net/url"
 	"os"
-	"path"
 	"path/filepath"
+	"strings"
 
 	"github.com/DogFox/CutIt/internal/cache"
 	"github.com/DogFox/CutIt/internal/downloader"
@@ -33,11 +32,9 @@ func New(logger *logger.Logger, cache *cache.Cache, downloader *downloader.Downl
 }
 
 func (a *App) Resize(imgURL, width, height string, headers map[string]string) (string, error) {
-	parsedURL, err := url.Parse(imgURL)
-	if err != nil {
-		return "", fmt.Errorf("invalid URL: %s", imgURL)
-	}
-	fileName := path.Base(parsedURL.Path)
+
+	parts := strings.Split(imgURL, "/")
+	fileName := parts[len(parts)-1]
 	cacheKey := filepath.Join("cache", width, height, fileName)
 
 	if path, found := a.cache.Get(cacheKey); found {

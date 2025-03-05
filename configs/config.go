@@ -10,6 +10,7 @@ type Config struct {
 	Server ServerConf
 	Cache  CacheConf
 	Logger LoggerConf
+	Tests  TestsConf
 }
 
 type CacheConf struct {
@@ -23,6 +24,11 @@ type ServerConf struct {
 type LoggerConf struct {
 	Level string
 	File  string
+}
+
+type TestsConf struct {
+	Url   string
+	Nginx string
 }
 
 func NewConfig(configFile string) (*Config, error) {

@@ -9,7 +9,7 @@ docker-build:
 	docker build -t $(DOCKER_IMAGE) .
 
 run:
-	docker-compose up --build
+	docker-compose up --build -d
 
 test:
 	go test ./...

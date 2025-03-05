@@ -2,6 +2,10 @@ version: '3.8'
 
 services:
   previewer:
+    environment:
+      - PREVIEWER_URL=${PREVIEWER_URL}
+      - NGINX_URL=${NGINX_URL}
+      - LRU_CACHE_SIZE=100
     build:
       context: .
       dockerfile: ./dockerfile
@@ -9,8 +13,8 @@ services:
       - "8050:8050"
     volumes:
       - ./cache:/app/cache
-    environment:
-      - LRU_CACHE_SIZE=100
+    networks:
+      - cutit
 
   nginx:
     build:
@@ -20,3 +24,9 @@ services:
       - "8081:80"
     volumes:
       - ./images:/usr/share/nginx/html/images
+    networks:
+      - cutit
+
+networks:
+  cutit:
+    driver: bridge

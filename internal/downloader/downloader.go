@@ -24,6 +24,7 @@ func (t Downloader) Download(url, filename string, headers map[string]string) er
 
 	req, err := http.NewRequest("GET", "http://"+url, nil)
 	if err != nil {
+		t.logg.Error("failed to fetch image: %w", err)
 		return fmt.Errorf("failed to fetch image: %w", err)
 	}
 
@@ -33,22 +34,26 @@ func (t Downloader) Download(url, filename string, headers map[string]string) er
 	}
 	resp, err := client.Do(req)
 	if err != nil {
+		t.logg.Error("failed to fetch image: %w", err)
 		return fmt.Errorf("failed to fetch image: %w", err)
 	}
 	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusOK {
+		t.logg.Errorf("failed to fetch image, status: %d", resp.StatusCode)
 		return fmt.Errorf("failed to fetch image, status: %d", resp.StatusCode)
 	}
 
 	out, err := os.Create(filename)
 	if err != nil {
+		t.logg.Errorf("failed to create file: %v", err)
 		return fmt.Errorf("failed to create file: %w", err)
 	}
 	defer out.Close()
 
 	_, err = io.Copy(out, resp.Body)
 	if err != nil {
+		t.logg.Errorf("failed to save image: %v", err)
 		return fmt.Errorf("failed to save image: %w", err)
 	}
 
