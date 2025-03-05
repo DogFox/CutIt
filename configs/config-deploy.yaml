@@ -1,5 +1,8 @@
 server:
-  host: "localhost"
+  host: "0.0.0.0"
   port: 8050
 cache:
   size: 100
+logger:
+  level: "info"
+  file: "app.log"
