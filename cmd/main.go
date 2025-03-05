@@ -11,7 +11,9 @@ import (
 	config "github.com/DogFox/CutIt/configs"
 	app "github.com/DogFox/CutIt/internal/app"
 	"github.com/DogFox/CutIt/internal/cache"
+	"github.com/DogFox/CutIt/internal/downloader"
 	logger "github.com/DogFox/CutIt/internal/logger"
+	"github.com/DogFox/CutIt/internal/resizer"
 	http "github.com/DogFox/CutIt/internal/server"
 )
 
@@ -45,9 +47,11 @@ func main() {
 	defer cancel()
 
 	cache := cache.NewCache(config.Cache.Size)
-	imageCutter := app.New(logg, cache)
+	downloader := downloader.NewDownloader(logg)
+	imageCutter := resizer.NewImageCutter(logg)
+	app := app.New(logg, cache, downloader, imageCutter)
 
-	httpServer := http.NewServer(logg, imageCutter, config.Server.DSN())
+	httpServer := http.NewServer(logg, app, config.Server.DSN())
 
 	var wg sync.WaitGroup
 	wg.Add(1)

@@ -9,21 +9,27 @@ import (
 
 	"github.com/DogFox/CutIt/internal/cache"
 	"github.com/DogFox/CutIt/internal/downloader"
+	"github.com/DogFox/CutIt/internal/logger"
 	"github.com/DogFox/CutIt/internal/resizer"
 )
 
 type App struct {
-	logger Logger
-	cache  *cache.Cache
+	logger     *logger.Logger
+	cache      *cache.Cache
+	downloader *downloader.Downloader
+	cutter     *resizer.ImageCutter
 }
 
 type Logger interface{}
 
-func New(logger Logger, cache *cache.Cache) *App {
+func New(logger *logger.Logger, cache *cache.Cache, downloader *downloader.Downloader, imageCutter *resizer.ImageCutter) *App {
 	return &App{
-		logger: logger,
-		cache:  cache,
+		logger:     logger,
+		cache:      cache,
+		downloader: downloader,
+		cutter:     imageCutter,
 	}
+
 }
 
 func (a *App) Resize(imgURL, width, height string) (string, error) {
@@ -42,15 +48,15 @@ func (a *App) Resize(imgURL, width, height string) (string, error) {
 	resizedPath := filepath.Join("cache", width+"_"+height+"_"+fileName)
 
 	if err := os.MkdirAll(filepath.Dir(originalPath), os.ModePerm); err != nil {
-		return "", err
+		return "", fmt.Errorf("unable to make dir")
 	}
 
-	if err := downloader.Download(imgURL, originalPath); err != nil {
-		return "", err
+	if err := a.downloader.Download(imgURL, originalPath); err != nil {
+		return "", fmt.Errorf("unable to download image")
 	}
 
-	if err := resizer.Resize(originalPath, resizedPath, width, height); err != nil {
-		return "", err
+	if err := a.cutter.Resize(originalPath, resizedPath, width, height); err != nil {
+		return "", fmt.Errorf("unable to resize image")
 	}
 
 	a.cache.Put(cacheKey, resizedPath)

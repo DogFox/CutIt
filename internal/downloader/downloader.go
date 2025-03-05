@@ -5,14 +5,26 @@ import (
 	"io"
 	"net/http"
 	"os"
+
+	"github.com/DogFox/CutIt/internal/logger"
 )
 
-func Download(url, filename string) error {
+type Downloader struct {
+	logg *logger.Logger
+}
+
+func NewDownloader(logg *logger.Logger) *Downloader {
+	return &Downloader{
+		logg: logg,
+	}
+}
+
+func (t Downloader) Download(url, filename string) error {
 	client := &http.Client{}
 
 	req, err := http.NewRequest("GET", "http://"+url, nil)
 	if err != nil {
-		return fmt.Errorf("failed to create request: %w", err)
+		return fmt.Errorf("failed to fetch image: %w", err)
 	}
 
 	req.Header.Set("User-Agent", "ImagePreviewer/1.0")
