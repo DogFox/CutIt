@@ -13,6 +13,7 @@ run:
 
 test:
 	go test ./...
+	go test -v ./tests/integration_test.go
 
 clean:
 	rm -f $(BINARY)

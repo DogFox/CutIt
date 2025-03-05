@@ -19,7 +19,7 @@ func NewDownloader(logg *logger.Logger) *Downloader {
 	}
 }
 
-func (t Downloader) Download(url, filename string) error {
+func (t Downloader) Download(url, filename string, headers map[string]string) error {
 	client := &http.Client{}
 
 	req, err := http.NewRequest("GET", "http://"+url, nil)
@@ -27,8 +27,10 @@ func (t Downloader) Download(url, filename string) error {
 		return fmt.Errorf("failed to fetch image: %w", err)
 	}
 
-	req.Header.Set("User-Agent", "ImagePreviewer/1.0")
-
+	// req.Header.Set("User-Agent", "ImagePreviewer/1.0")
+	for key, value := range headers {
+		req.Header.Set(key, value)
+	}
 	resp, err := client.Do(req)
 	if err != nil {
 		return fmt.Errorf("failed to fetch image: %w", err)

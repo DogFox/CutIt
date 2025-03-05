@@ -11,3 +11,12 @@ services:
       - ./cache:/app/cache
     environment:
       - LRU_CACHE_SIZE=100
+
+  nginx:
+    build:
+      context: .
+      dockerfile: ./dockerfile.nginx
+    ports:
+      - "8081:80"
+    volumes:
+      - ./images:/usr/share/nginx/html/images

@@ -32,7 +32,7 @@ func New(logger *logger.Logger, cache *cache.Cache, downloader *downloader.Downl
 
 }
 
-func (a *App) Resize(imgURL, width, height string) (string, error) {
+func (a *App) Resize(imgURL, width, height string, headers map[string]string) (string, error) {
 	parsedURL, err := url.Parse(imgURL)
 	if err != nil {
 		return "", fmt.Errorf("invalid URL: %s", imgURL)
@@ -51,7 +51,7 @@ func (a *App) Resize(imgURL, width, height string) (string, error) {
 		return "", fmt.Errorf("unable to make dir")
 	}
 
-	if err := a.downloader.Download(imgURL, originalPath); err != nil {
+	if err := a.downloader.Download(imgURL, originalPath, headers); err != nil {
 		return "", fmt.Errorf("unable to download image")
 	}
 

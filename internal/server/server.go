@@ -73,7 +73,12 @@ func (s *Server) ResizeImage(w http.ResponseWriter, r *http.Request) {
 	height := parts[3]
 	imgURL := strings.Join(parts[4:], "/")
 
-	resizedPath, err := s.app.Resize(imgURL, width, height)
+	headers := make(map[string]string)
+	for key, values := range r.Header {
+		headers[key] = values[0]
+	}
+
+	resizedPath, err := s.app.Resize(imgURL, width, height, headers)
 	if err != nil {
 		http.Error(w, "Error processing image", http.StatusInternalServerError)
 		return
