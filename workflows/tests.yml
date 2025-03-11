@@ -1,0 +1,56 @@
+name: CI Pipeline
+
+on:
+  push:
+    branches:
+      - develop*
+  pull_request:
+    branches:
+      - develop*
+
+env:
+  GO111MODULE: "on"
+
+jobs:
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Set up Go
+        uses: actions/setup-go@v4
+        with:
+          go-version: ~1.23
+      - name: Check out code
+        uses: actions/checkout@v4
+
+      - name: Run linter
+        uses: golangci/golangci-lint-action@v3
+        with:
+          version: v1.63.4
+          args: --timeout=5m  
+
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Set up Go
+        uses: actions/setup-go@v4
+        with:
+          go-version: ~1.23
+
+      - name: Check out code
+        uses: actions/checkout@v4
+
+      - name: Run unit tests
+        run: go test -v -race -cover ./...
+
+      - name: Run integration tests (optional)
+        run: go test -v -tags=integration ./...
+        if: ${{ !contains(github.ref, 'cutit') }} 
+        
+  test-with-make:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out code
+        uses: actions/checkout@v4
+
+      - name: Run tests via Makefile
+        run: make test

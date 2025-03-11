@@ -1,0 +1,54 @@
+# Превьювер изображений
+
+## Описание
+Сервис для загрузки изображений по URL, их обработки (изменения размера) и кеширования на диске с LRU-очисткой.
+
+## Возможности
+- Загрузка изображения по URL
+- Изменение размера изображений
+- Кеширование изображений на диске (LRU-очистка по количеству файлов)
+- Проксирование заголовков
+- Поддержка HTTP и формата JPEG
+- Развертывание через Docker Compose
+- Unit-тесты (LRU) и интеграционные тесты с Nginx
+
+## Запуск
+### Локальный запуск
+```sh
+make build
+./previewer -config ./configs/config.yaml
+```
+
+### Запуск через Docker Compose
+```sh
+make run
+```
+
+### Остановка
+```sh
+make clean
+```
+
+## Переменные окружения
+| Переменная        | Описание                           | Значение по умолчанию |
+|-------------------|----------------------------------|----------------------|
+| PREVIEWER_URL    | URL превьювера                    | `http://localhost`  |
+| NGINX_URL        | URL Nginx                         | `http://localhost`  |
+| LRU_CACHE_SIZE   | Размер LRU-кэша                   | `100`               |
+
+## Тестирование
+```sh
+make test
+```
+
+## Бейджи
+![Tests](https://github.com/DogFox/CutIt/workflows/tests/badge.svg)
+![Go Report](https://goreportcard.com/badge/github.com/DogFox/CutIt)
+
+## API
+
+Пример запроса:
+```sh
+curl "localhost:8050/fill/300/200/raw.githubusercontent.com/OtusGolang/final_project/master/examples/image-previewer/_gopher_original_1024x504.jpg"
+```
+
