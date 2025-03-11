@@ -1,0 +1,60 @@
+name: CI Pipeline
+
+on:
+  push:
+    branches:
+      - develop*
+  pull_request:
+    branches:
+      - develop*
+
+env:
+  GO111MODULE: "on"
+
+jobs:
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Set up Go
+        uses: actions/setup-go@v4
+        with:
+          go-version: ~1.23
+      - name: Check out code
+        uses: actions/checkout@v4
+      - name: Run linter
+        uses: golangci/golangci-lint-action@v3
+        with:
+          version: latest
+          args: --timeout=5m
+
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Set up Go
+        uses: actions/setup-go@v4
+        with:
+          go-version: ~1.23
+
+      - name: Install Docker Compose
+        run: |
+          curl -SL https://github.com/docker/compose/releases/download/v2.29.7/docker-compose-linux-x86_64 -o docker-compose
+          chmod +x docker-compose
+          sudo mv docker-compose /usr/local/bin/
+
+      - name: Check out code
+        uses: actions/checkout@v4
+
+      - name: Start services
+        run: docker-compose up --build -d 
+
+      - name: Wait for services to be ready
+        run: sleep 10 
+
+      - name: Run unit tests
+        run: go test -v -race -cover ./...
+
+      - name: Run integration tests
+        run: go test -v -tags=integration ./...
+
+      - name: Stop services
+        run: docker-compose down 
