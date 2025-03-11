@@ -44,7 +44,6 @@ jobs:
 
       - name: Run integration tests (optional)
         run: go test -v -tags=integration ./...
-        if: ${{ !contains(github.ref, 'cutit') }} 
         
   test-with-make:
     runs-on: ubuntu-latest
