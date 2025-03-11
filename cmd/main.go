@@ -58,7 +58,11 @@ func main() {
 
 	go func() {
 		defer wg.Done()
-		startHTTPServer(ctx, httpServer, logg)
+		err := startHTTPServer(ctx, httpServer, logg)
+		if err != nil {
+			logg.Error("failed to stop http server: " + err.Error())
+		}
+
 	}()
 
 	wg.Wait()

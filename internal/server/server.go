@@ -9,7 +9,6 @@ import (
 	"time"
 
 	"github.com/DogFox/CutIt/internal/app"
-	"github.com/DogFox/CutIt/internal/cache"
 	"github.com/DogFox/CutIt/internal/logger"
 )
 
@@ -17,7 +16,6 @@ type Server struct {
 	Addr    string
 	Handler http.Handler
 	logg    *logger.Logger
-	cache   *cache.Cache
 	app     *app.App
 }
 

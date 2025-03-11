@@ -58,11 +58,3 @@ jobs:
 
       - name: Stop services
         run: docker-compose down 
-  test-with-make:
-    runs-on: ubuntu-latest
-    steps:
-      - name: Check out code
-        uses: actions/checkout@v4
-
-      - name: Run tests via Makefile
-        run: make run && make test 
