@@ -25,10 +25,15 @@ func TestImageFromCache(t *testing.T) {
 	})
 
 	t.Run("TestRemoteServerNotExists", func(t *testing.T) {
-		url := previewerURL + "http://nonexistent.domain/image.jpg"
+		url := previewerURL + "nonexistent.domain/image.jpg"
 		resp, err := http.Get(url)
-		if err != nil || resp.StatusCode != http.StatusInternalServerError {
-			t.Fatalf("Expected 500, got %d, err: %v", resp.StatusCode, err)
+		if err != nil {
+			t.Fatalf("Failed to send request: %v", err)
+		}
+		defer resp.Body.Close()
+
+		if resp.StatusCode != http.StatusInternalServerError {
+			t.Fatalf("Expected 500, got %d", resp.StatusCode)
 		}
 	})
 
